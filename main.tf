@@ -23,15 +23,13 @@ module "vpc" {
 
 # 2. ALB용 SG 모듈
 module "alb_sg" {
-  source = "./modules/security-group/alb"
-  name   = var.name
+  source = "./modules/security-group/alb-sg"
   vpc_id = module.vpc.vpc_id
 }
 
 # 3. EKS Node용 SG 모듈
 module "eks_node_sg" {
-  source     = "./modules/security-group/eks"
-  name       = var.name
+  source     = "./modules/security-group/eks-node-sg"
   vpc_id     = module.vpc.vpc_id
   alb_sg_id  = module.alb_sg.alb_sg_id
 }
