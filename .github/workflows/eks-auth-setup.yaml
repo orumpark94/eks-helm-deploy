@@ -25,6 +25,11 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
+    - name: 🔧 Install Terraform CLI
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.5.7  # ✅ 원하는 버전 사용
+
     - name: ⚙️ Load Terraform output from remote S3 state (no local .tf files needed)
       run: |
         terraform init \
