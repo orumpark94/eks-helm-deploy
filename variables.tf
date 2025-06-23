@@ -47,3 +47,8 @@ variable "app_port" {
   default     = 3000
 }
 
+# VPC ID를 변수로 처리하고 싶을 경우
+variable "vpc_id" {
+  description = "VPC ID"
+  type        = string
+}

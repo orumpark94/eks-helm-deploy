@@ -1,32 +1,8 @@
-resource "aws_security_group" "alb_sg" {
-  name        = "${var.name}-alb-sg"
-  description = "Allow HTTP inbound"
-  vpc_id      = var.vpc_id
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "${var.name}-alb-sg"
-  }
-}
-
 resource "aws_lb" "alb" {
   name               = "${var.name}-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb_sg.id]
+  security_groups    = [var.alb_sg_id]               # ✅ 외부에서 받은 값 사용
   subnets            = var.public_subnet_ids
 
   tags = {
@@ -35,11 +11,11 @@ resource "aws_lb" "alb" {
 }
 
 resource "aws_lb_target_group" "tg" {
-  name     = "${var.name}-tg"
-  port     = var.target_port
-  protocol = "HTTP"
-  vpc_id   = var.vpc_id
-  target_type = "ip"
+  name         = "${var.name}-tg"
+  port         = 3000
+  protocol     = "HTTP"
+  vpc_id       = var.vpc_id
+  target_type  = "ip"
 
   health_check {
     path                = "/"

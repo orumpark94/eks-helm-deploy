@@ -17,3 +17,8 @@ variable "target_port" {
   description = "Port your app is listening on (e.g., 3000 for Node.js)"
   type        = number
 }
+
+variable "alb_sg_id" {
+  description = "ALB security group ID (from external SG module)"
+  type        = string
+}
