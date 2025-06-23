@@ -25,13 +25,13 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
-    - name: ⚙️ Setup Terraform and get node_role_arn from remote state
+    - name: ⚙️ Load Terraform output from remote S3 state (no local .tf files needed)
       run: |
-        cd terraform
         terraform init \
           -backend-config="bucket=$TF_BUCKET" \
           -backend-config="key=$TF_KEY" \
           -backend-config="region=$AWS_REGION"
+          
         NODE_ROLE_ARN=$(terraform output -raw node_role_arn)
         echo "NODE_ROLE_ARN=$NODE_ROLE_ARN" >> $GITHUB_ENV
 
@@ -62,7 +62,7 @@ jobs:
     - name: ✅ Apply aws-auth ConfigMap
       run: |
         kubectl apply -f k8s/aws-auth.yaml
-        
+
     - name: 🔍 Check EKS Nodes (Optional)
       run: |
         kubectl get nodes -o wide
