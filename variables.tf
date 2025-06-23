@@ -47,8 +47,3 @@ variable "app_port" {
   default     = 3000
 }
 
-# S3 백엔드 버킷 이름 (※ default 없음)
-variable "s3_bucket" {
-  description = "Terraform backend S3 bucket name"
-  type        = string
-}
