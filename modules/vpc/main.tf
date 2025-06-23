@@ -86,7 +86,7 @@ resource "aws_route_table_association" "public_c" {
 
 # NAT Gateway
 resource "aws_eip" "nat" {
-  vpc = true
+  
 
   tags = {
     Name = "${var.name}-nat-eip"
