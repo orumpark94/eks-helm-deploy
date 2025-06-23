@@ -14,3 +14,6 @@ output "alb_sg_id" {
   value = module.alb_sg.alb_sg_id
 }
 
+output "eks_node_sg_id" {
+  value = module.eks_node_sg.eks_node_sg_id
+}
