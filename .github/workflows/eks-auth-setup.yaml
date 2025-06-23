@@ -1,0 +1,68 @@
+name: EKS Auth Setup
+
+on:
+  workflow_dispatch:
+
+jobs:
+  configure-auth:
+    name: Configure aws-auth for Worker Nodes
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: ap-northeast-2
+      EKS_CLUSTER_NAME: eks-gitops-eks
+      TF_BUCKET: eks-terrafrom
+      TF_KEY: eks/terraform.tfstate
+
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v3
+
+    - name: 🔐 Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: ⚙️ Setup Terraform and get node_role_arn from remote state
+      run: |
+        cd terraform
+        terraform init \
+          -backend-config="bucket=$TF_BUCKET" \
+          -backend-config="key=$TF_KEY" \
+          -backend-config="region=$AWS_REGION"
+        NODE_ROLE_ARN=$(terraform output -raw node_role_arn)
+        echo "NODE_ROLE_ARN=$NODE_ROLE_ARN" >> $GITHUB_ENV
+
+    - name: 📝 Generate aws-auth.yaml dynamically
+      run: |
+        mkdir -p k8s
+        cat <<EOF > k8s/aws-auth.yaml
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: aws-auth
+          namespace: kube-system
+        data:
+          mapRoles: |
+            - rolearn: ${NODE_ROLE_ARN}
+              username: system:node:{{EC2PrivateDNSName}}
+              groups:
+                - system:bootstrappers
+                - system:nodes
+        EOF
+
+    - name: 🛰️ Update kubeconfig
+      run: |
+        aws eks update-kubeconfig \
+          --region $AWS_REGION \
+          --name $EKS_CLUSTER_NAME
+
+    - name: ✅ Apply aws-auth ConfigMap
+      run: |
+        kubectl apply -f k8s/aws-auth.yaml
+        
+    - name: 🔍 Check EKS Nodes (Optional)
+      run: |
+        kubectl get nodes -o wide
