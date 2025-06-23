@@ -9,3 +9,8 @@ output "alb_dns_name" {
 output "cluster_name" {
   value = module.eks.cluster_name
 }
+
+output "alb_sg_id" {
+  value = module.alb_sg.alb_sg_id
+}
+
