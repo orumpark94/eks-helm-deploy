@@ -15,7 +15,7 @@ resource "aws_lb_target_group" "tg" {
   port         = 30000
   protocol     = "HTTP"
   vpc_id       = var.vpc_id
-  target_type  = "ip"
+  target_type  = "instance"  # EKS nodes are instances
 
   health_check {
     path                = "/"
