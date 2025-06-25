@@ -28,19 +28,19 @@ jobs:
     - name: 🔧 Install Terraform CLI
       uses: hashicorp/setup-terraform@v3
       with:
-        terraform_version: 1.5.7  # ✅ 원하는 버전 사용
+        terraform_version: 1.5.7
 
-    - name: ⚙️ Load Terraform output from remote S3 state (no local .tf files needed)
+    - name: ⚙️ Load Terraform output from remote S3 state
       run: |
         terraform init \
           -backend-config="bucket=$TF_BUCKET" \
           -backend-config="key=$TF_KEY" \
           -backend-config="region=$AWS_REGION"
-          
+        
         NODE_ROLE_ARN=$(terraform output -raw node_role_arn)
         echo "NODE_ROLE_ARN=$NODE_ROLE_ARN" >> $GITHUB_ENV
 
-    - name: 📝 Generate aws-auth.yaml dynamically
+    - name: 📝 Generate aws-auth.yaml (with secret-based root user)
       run: |
         mkdir -p k8s
         cat <<EOF > k8s/aws-auth.yaml
@@ -56,6 +56,11 @@ jobs:
               groups:
                 - system:bootstrappers
                 - system:nodes
+          mapUsers: |
+            - userarn: ${{ secrets.ROOT_USER_ARN }}
+              username: root
+              groups:
+                - system:masters
         EOF
 
     - name: 🛰️ Update kubeconfig
