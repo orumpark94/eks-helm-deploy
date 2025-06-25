@@ -1,0 +1,45 @@
+name: Reset EKS Resources
+
+on:
+  workflow_dispatch:
+
+jobs:
+  reset-eks:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: ap-northeast-2
+      EKS_CLUSTER_NAME: eks-gitops-eks
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v3
+
+      - name: 🔐 Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 📡 Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --region ${{ env.AWS_REGION }} \
+            --name ${{ env.EKS_CLUSTER_NAME }}
+
+      - name: 🔥 Delete all Kubernetes resources in default namespace
+        run: |
+          kubectl delete all --all -n default || true
+          kubectl delete configmap --all -n default || true
+          kubectl delete pvc --all -n default || true
+          kubectl delete secret --all -n default || true
+
+      - name: 🔍 Uninstall Helm releases (if any)
+        run: |
+          helm list -n default -q | xargs -r -n1 helm uninstall -n default
+
+      - name: ✅ Show remaining resources (verify)
+        run: |
+          echo "🧹 Final resource check:"
+          kubectl get all -n default || true
