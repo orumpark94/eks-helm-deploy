@@ -1,12 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}
+  name: {{ .Chart.Name }}
+  labels:
+    app: {{ .Chart.Name }}
 spec:
   type: {{ .Values.service.type }}
   selector:
-    app: {{ .Release.Name }}
+    app: {{ .Chart.Name }}
   ports:
-    - port: {{ .Values.service.port }}           # 내부적으로 서비스가 listen하는 포트 (NodePort와 같게 맞춰도 무방)
-      targetPort: {{ .Values.service.targetPort }} # 컨테이너 내부 포트 (3000)
-      nodePort: {{ .Values.service.nodePort }}     # EC2 노드의 외부 고정 포트 (30000)
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      nodePort: {{ .Values.service.nodePort }}

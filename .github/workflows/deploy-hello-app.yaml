@@ -36,8 +36,12 @@ jobs:
       with:
         version: v3.13.3
 
+    - name: Uninstall previous hello-app (safe reset)
+      run: |
+        helm uninstall hello-app || true
+
     - name: Deploy hello-app via Helm
       run: |
-        helm upgrade --install hello-app ./helm/hello-app \
+        helm install hello-app ./helm/hello-app \
           --namespace default \
           --create-namespace
