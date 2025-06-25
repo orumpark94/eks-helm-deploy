@@ -1,0 +1,42 @@
+name: Deploy hello-app to EKS via Helm
+
+# ✅ GitHub Actions 수동 실행 버튼으로 실행되도록 설정
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-hello-app:
+    name: Deploy hello-app
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: ap-northeast-2
+      EKS_CLUSTER_NAME: eks-gitops-eks
+
+    steps:
+    - name: 📥 Checkout source code
+      uses: actions/checkout@v3
+
+    - name: 🔐 Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: 📡 Set up kubeconfig for EKS
+      run: |
+        aws eks update-kubeconfig \
+          --region ${{ env.AWS_REGION }} \
+          --name ${{ env.EKS_CLUSTER_NAME }}
+
+    - name: 🛠️ Install Helm CLI
+      uses: azure/setup-helm@v3
+      with:
+        version: v3.13.3
+
+    - name: 🚀 Deploy hello-app via Helm
+      run: |
+        helm upgrade --install hello-app ./helm/hello-app \
+          --namespace default \
+          --create-namespace

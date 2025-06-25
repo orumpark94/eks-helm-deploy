@@ -44,5 +44,5 @@ variable "availability_zones" {
 variable "app_port" {
   description = "Application port exposed by the ALB"
   type        = number
-  default     = 3000
+  default     = 30000
 }

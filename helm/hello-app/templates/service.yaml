@@ -7,5 +7,6 @@ spec:
   selector:
     app: {{ .Release.Name }}
   ports:
-    - port: {{ .Values.service.port }}
-      targetPort: {{ .Values.service.targetPort }}
+    - port: {{ .Values.service.port }}           # 내부적으로 서비스가 listen하는 포트 (NodePort와 같게 맞춰도 무방)
+      targetPort: {{ .Values.service.targetPort }} # 컨테이너 내부 포트 (3000)
+      nodePort: {{ .Values.service.nodePort }}     # EC2 노드의 외부 고정 포트 (30000)

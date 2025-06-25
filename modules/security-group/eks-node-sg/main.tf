@@ -5,8 +5,8 @@ resource "aws_security_group" "eks_nodes" {
 
   ingress {
     description     = "Allow ALB to access Node.js app"
-    from_port       = 3000
-    to_port         = 3000
+    from_port       = 30000
+    to_port         = 30000
     protocol        = "tcp"
     security_groups = [var.alb_sg_id]
   }
