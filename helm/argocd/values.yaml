@@ -1,0 +1,11 @@
+server:
+  service:
+    type: LoadBalancer
+    port: 8443
+
+  ingress:
+    enabled: false
+
+configs:
+  secret:
+    argocdServerAdminPassword: $2a$10$y9nBJy8GQbiNP/1qZobguOIT3W/hhXShIGeC0JG7xY6jWdeKbwJXm

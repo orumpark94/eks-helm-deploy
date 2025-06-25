@@ -1,0 +1,67 @@
+name: Deploy ArgoCD to EKS via Helm
+
+on:
+  workflow_dispatch:  # 수동 실행
+
+jobs:
+  deploy-argocd:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: ap-northeast-2
+      EKS_CLUSTER_NAME: eks-gitops-eks
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v3
+
+      - name: 🔐 Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 📡 Set up kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_BASE64 }}" | base64 --decode > ~/.kube/config
+
+      - name: 🛠️ Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.13.3
+
+      - name: 🚀 Deploy ArgoCD via Helm
+        run: |
+          kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+          helm repo add argo https://argoproj.github.io/argo-helm
+          helm repo update
+
+          helm upgrade --install argocd argo/argo-cd \
+            -n argocd \
+            -f helm/argocd/values.yaml \
+            --version 5.51.5
+
+      - name: 📡 Wait for ArgoCD LoadBalancer DNS and Display
+        run: |
+          echo "📡 Waiting for LoadBalancer DNS to be provisioned..."
+
+          for i in {1..30}; do
+            HOSTNAME=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+            if [[ -n "$HOSTNAME" ]]; then
+              echo "✅ LoadBalancer is ready!"
+              echo ""
+              echo "🔗 Access the ArgoCD UI:"
+              echo "🌐 https://$HOSTNAME:8443"
+              echo ""
+              echo "👤 Username: admin"
+              echo "🔑 Password: (check your values.yaml or use kubectl get secret)"
+              exit 0
+            fi
+            echo "⏳ Not ready yet... waiting 10 seconds ($i/30)"
+            sleep 10
+          done
+
+          echo "❌ Timeout: LoadBalancer DNS not available after 5 minutes."
+          exit 1
