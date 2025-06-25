@@ -81,7 +81,42 @@ resource "aws_iam_role_policy_attachment" "ssm_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
-# Node Group 생성
+# ✅ Launch Template: 비밀번호 설정 + 30000 포트 오픈
+resource "aws_launch_template" "eks_node_lt" {
+  name_prefix   = "${var.name}-lt-"
+  instance_type = "t3.medium"
+
+  user_data = base64encode(<<-EOF
+    #!/bin/bash
+    echo "==> 설정: root 비밀번호 및 포트 오픈"
+
+    # 1. root 비밀번호 설정
+    echo "root:k8s" | chpasswd
+
+    # 2. SSH 비밀번호 로그인 허용
+    sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+    sed -i 's/^#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
+    # 3. SSH 재시작
+    systemctl restart sshd
+
+    # 4. 포트 30000 오픈
+    iptables -I INPUT -p tcp --dport 30000 -j ACCEPT
+
+    # 5. EKS 노드 등록
+    /etc/eks/bootstrap.sh ${var.name}-eks
+  EOF
+  )
+
+  tag_specifications {
+    resource_type = "instance"
+    tags = {
+      Name = "${var.name}-node"
+    }
+  }
+}
+
+# Node Group 생성 (Launch Template 연결됨)
 resource "aws_eks_node_group" "this" {
   cluster_name    = aws_eks_cluster.this.name
   node_group_name = "${var.name}-nodegroup"
@@ -94,11 +129,14 @@ resource "aws_eks_node_group" "this" {
     min_size     = 1
   }
 
-  instance_types = ["t3.medium"]
+  launch_template {
+    id      = aws_launch_template.eks_node_lt.id
+    version = "$Latest"
+  }
 
   tags = {
-    Name = "${var.name}-nodegroup"
-    AppPort = tostring(var.target_port) # 포트를 태그로 전달
+    Name    = "${var.name}-nodegroup"
+    AppPort = tostring(var.target_port)
   }
 
   depends_on = [
