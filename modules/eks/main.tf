@@ -81,12 +81,18 @@ resource "aws_iam_role_policy_attachment" "ssm_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
-# ✅ Launch Template: 비밀번호 설정 + 30000 포트 오픈
+# ✅ Launch Template: MIME multipart + root 비밀번호 설정 + 30000 포트 오픈
 resource "aws_launch_template" "eks_node_lt" {
   name_prefix   = "${var.name}-lt-"
   instance_type = "t3.medium"
 
   user_data = base64encode(<<-EOF
+    MIME-Version: 1.0
+    Content-Type: multipart/mixed; boundary="BOUNDARY"
+
+    --BOUNDARY
+    Content-Type: text/x-shellscript; charset="us-ascii"
+
     #!/bin/bash
     echo "==> 설정: root 비밀번호 및 포트 오픈"
 
@@ -105,6 +111,8 @@ resource "aws_launch_template" "eks_node_lt" {
 
     # 5. EKS 노드 등록
     /etc/eks/bootstrap.sh ${var.name}-eks
+
+    --BOUNDARY--
   EOF
   )
 
@@ -115,6 +123,7 @@ resource "aws_launch_template" "eks_node_lt" {
     }
   }
 }
+
 
 # Node Group 생성 (Launch Template 연결됨)
 resource "aws_eks_node_group" "this" {
